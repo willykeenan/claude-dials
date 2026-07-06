@@ -2,7 +2,7 @@
 
 ## Fastest (published package)
 ```bash
-claude mcp add dials -- npx -y @kestudios/claude-dials
+claude mcp add dials -- npx -y github:willykeenan/claude-dials
 ```
 
 ## From a local clone
@@ -16,7 +16,7 @@ claude mcp add dials -- node /ABSOLUTE/PATH/claude-dials/src/stdio.mjs
   "mcpServers": {
     "dials": {
       "command": "npx",
-      "args": ["-y", "@kestudios/claude-dials"]
+      "args": ["-y", "github:willykeenan/claude-dials"]
     }
   }
 }

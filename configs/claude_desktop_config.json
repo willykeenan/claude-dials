@@ -2,7 +2,7 @@
   "mcpServers": {
     "dials": {
       "command": "npx",
-      "args": ["-y", "@kestudios/claude-dials"]
+      "args": ["-y", "github:willykeenan/claude-dials"]
     }
   }
 }

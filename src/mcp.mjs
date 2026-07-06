@@ -1,13 +1,12 @@
-// Zero-dependency MCP core. Transport-agnostic: hand it a parsed JSON-RPC 2.0
-// message + a context, get back a response object (or null for notifications).
-// Implements: initialize, tools/*, resources/*, prompts/*, ping.
+// Zero-dependency MCP core. Transport- AND storage-agnostic: hand it a parsed
+// JSON-RPC 2.0 message + a context { store, stamp }, get back a response object
+// (or null for notifications). The store is injected so the same protocol code
+// serves the local file store, a Supabase-backed hosted connector, or anything.
 
 import { DIALS, PRESETS, PRESET_NAMES } from "./dials.mjs";
-import {
-  loadState, setDial, applyPreset, resetDials, renderCurrent, explainDial,
-} from "./store.mjs";
+import { renderCurrent, explainDial, opSetDial, opApplyPreset, opReset } from "./logic.mjs";
 
-export const SERVER_INFO = { name: "claude-dials", version: "0.1.0" };
+export const SERVER_INFO = { name: "claude-dials", version: "0.2.0" };
 const SUPPORTED = ["2024-11-05", "2025-03-26", "2025-06-18"];
 const DEFAULT_PROTOCOL = "2024-11-05";
 
@@ -18,7 +17,7 @@ const TOOLS = [
     description:
       "Read the user's current behavior dials and follow them. Call this at the start of a task to know how the user wants you to work (rigor, verification, verbosity, autonomy, etc.).",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
-    handler: () => ({ text: renderCurrent() }),
+    handler: async (_args, ctx) => ({ text: renderCurrent(await ctx.store.load()) }),
   },
   {
     name: "set_dial",
@@ -32,8 +31,8 @@ const TOOLS = [
       required: ["dial", "value"],
       additionalProperties: false,
     },
-    handler: (args, ctx) => {
-      const r = setDial(args?.dial, args?.value, ctx.stamp);
+    handler: async (args, ctx) => {
+      const r = await opSetDial(ctx.store, args?.dial, args?.value, ctx.stamp);
       if (!r.ok) return { text: r.error, isError: true };
       return { text: `Set ${args.dial} → ${args.value}.\n\n${renderCurrent(r.state)}` };
     },
@@ -47,8 +46,8 @@ const TOOLS = [
       required: ["preset"],
       additionalProperties: false,
     },
-    handler: (args, ctx) => {
-      const r = applyPreset(args?.preset, ctx.stamp);
+    handler: async (args, ctx) => {
+      const r = await opApplyPreset(ctx.store, args?.preset, ctx.stamp);
       if (!r.ok) return { text: r.error, isError: true };
       return { text: `Applied preset "${args.preset}".\n\n${renderCurrent(r.state)}` };
     },
@@ -57,7 +56,7 @@ const TOOLS = [
     name: "list_presets",
     description: "List the available presets and what each one does.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
-    handler: () => {
+    handler: async () => {
       const rows = PRESET_NAMES.map((n) => `- **${n}** — ${PRESETS[n].description}`).join("\n");
       return { text: `Presets:\n${rows}` };
     },
@@ -71,8 +70,8 @@ const TOOLS = [
       required: ["dial"],
       additionalProperties: false,
     },
-    handler: (args) => {
-      const r = explainDial(args?.dial);
+    handler: async (args, ctx) => {
+      const r = explainDial(args?.dial, await ctx.store.load());
       return r.ok ? { text: r.text } : { text: r.error, isError: true };
     },
   },
@@ -80,8 +79,8 @@ const TOOLS = [
     name: "reset_dials",
     description: "Reset all dials to the balanced default preset.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
-    handler: (_args, ctx) => {
-      const r = resetDials(ctx.stamp);
+    handler: async (_args, ctx) => {
+      const r = await opReset(ctx.store, ctx.stamp);
       return { text: `Reset to defaults.\n\n${renderCurrent(r.state)}` };
     },
   },
@@ -95,14 +94,14 @@ const RESOURCES = [
     name: "Current dials",
     description: "The user's active behavior settings — read and follow these.",
     mimeType: "text/markdown",
-    read: () => ({ mimeType: "text/markdown", text: renderCurrent() }),
+    read: async (ctx) => ({ mimeType: "text/markdown", text: renderCurrent(await ctx.store.load()) }),
   },
   {
     uri: "dials://schema",
     name: "Dials schema",
     description: "All dials, their bands, and presets as JSON.",
     mimeType: "application/json",
-    read: () => ({ mimeType: "application/json", text: JSON.stringify({ dials: DIALS, presets: PRESETS }, null, 2) }),
+    read: async () => ({ mimeType: "application/json", text: JSON.stringify({ dials: DIALS, presets: PRESETS }, null, 2) }),
   },
 ];
 const RESOURCE_MAP = Object.fromEntries(RESOURCES.map((r) => [r.uri, r]));
@@ -112,7 +111,7 @@ const PROMPTS = [
   {
     name: "load-dials",
     description: "Load the user's current behavior dials and follow them for this session.",
-    get: () => ({
+    get: async (ctx) => ({
       description: "Follow the user's current behavior dials.",
       messages: [
         {
@@ -121,7 +120,7 @@ const PROMPTS = [
             type: "text",
             text:
               "Adopt the following behavior settings for our session. Each dial's band is a concrete instruction; honor the exact value rather than defaulting to 'more'.\n\n" +
-              renderCurrent(),
+              renderCurrent(await ctx.store.load()),
           },
         },
       ],
@@ -135,23 +134,20 @@ const ok = (id, result) => ({ jsonrpc: "2.0", id, result });
 const err = (id, code, message) => ({ jsonrpc: "2.0", id, error: { code, message } });
 
 // ---- dispatch ----------------------------------------------------------
-export function handleMessage(msg, ctx = {}) {
-  const stamp = ctx.stamp ?? null;
+export async function handleMessage(msg, ctx = {}) {
   // A notification is a request with no `id`. Per JSON-RPC 2.0 the server MUST
-  // NOT reply to one — so we compute the response, then swallow it if this was
-  // a notification. Side effects still run.
+  // NOT reply — compute, then swallow the response if this was a notification.
   const isNotification = !!msg && typeof msg === "object" && !Array.isArray(msg) && msg.id === undefined;
   const id = msg && msg.id !== undefined ? msg.id : null;
   const method = msg && msg.method;
-  // MCP uses by-name params only; coerce anything non-object to {}.
   const params =
     msg && typeof msg.params === "object" && msg.params !== null && !Array.isArray(msg.params) ? msg.params : {};
 
-  const response = dispatch(id, method, params, stamp);
+  const response = await dispatch(id, method, params, ctx);
   return isNotification ? null : response;
 }
 
-function dispatch(id, method, params, stamp) {
+async function dispatch(id, method, params, ctx) {
   if (!method) return err(id, -32600, "Invalid Request: missing method");
 
   switch (method) {
@@ -179,7 +175,7 @@ function dispatch(id, method, params, stamp) {
       const tool = TOOL_MAP[params.name];
       if (!tool) return err(id, -32602, `Unknown tool: ${params.name}`);
       try {
-        const { text, isError } = tool.handler(params.arguments || {}, { stamp });
+        const { text, isError } = await tool.handler(params.arguments || {}, ctx);
         return ok(id, { content: [{ type: "text", text }], isError: Boolean(isError) });
       } catch (e) {
         return ok(id, { content: [{ type: "text", text: `Tool error: ${e.message}` }], isError: true });
@@ -195,7 +191,7 @@ function dispatch(id, method, params, stamp) {
     case "resources/read": {
       const res = RESOURCE_MAP[params.uri];
       if (!res) return err(id, -32602, `Unknown resource: ${params.uri}`);
-      const { mimeType, text } = res.read();
+      const { mimeType, text } = await res.read(ctx);
       return ok(id, { contents: [{ uri: params.uri, mimeType, text }] });
     }
 
@@ -205,7 +201,7 @@ function dispatch(id, method, params, stamp) {
     case "prompts/get": {
       const prompt = PROMPT_MAP[params.name];
       if (!prompt) return err(id, -32602, `Unknown prompt: ${params.name}`);
-      return ok(id, prompt.get());
+      return ok(id, await prompt.get(ctx));
     }
 
     default:

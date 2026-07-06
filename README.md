@@ -4,8 +4,12 @@
 
 Free. MIT. **Zero dependencies.**
 
+**On claude.ai?** Get a free hosted connector (no signup) at **https://claude-dials.vercel.app** — generate a token, paste the endpoint + token into a custom connector, done.
+
+**In Claude Code / Desktop?** One line:
+
 ```bash
-claude mcp add dials -- npx -y @kestudios/claude-dials
+claude mcp add dials -- npx -y github:willykeenan/claude-dials
 ```
 
 ---
@@ -47,9 +51,9 @@ And a resource `dials://current` (the live settings as Markdown) + `dials://sche
 
 | Client | How |
 |---|---|
-| **Claude Code** | `claude mcp add dials -- npx -y @kestudios/claude-dials` — [details](configs/claude-code.md) |
+| **Claude Code** | `claude mcp add dials -- npx -y github:willykeenan/claude-dials` — [details](configs/claude-code.md) |
 | **Claude Desktop** | add the snippet in [`configs/claude_desktop_config.json`](configs/claude_desktop_config.json) |
-| **claude.ai** | host `src/http.mjs` and add a custom connector — [details](configs/connector.md) |
+| **claude.ai** | free hosted connector — generate one at [claude-dials.vercel.app](https://claude-dials.vercel.app), or self-host `src/http.mjs` ([details](configs/connector.md)) |
 
 Drop [`CLAUDE.md`](CLAUDE.md) into a repo to make Claude read your dials at the start of every task.
 

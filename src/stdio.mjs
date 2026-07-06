@@ -4,7 +4,10 @@
 // messages may go to stdout; diagnostics go to stderr.
 
 import { handleMessage } from "./mcp.mjs";
+import { createFileStore } from "./store.mjs";
 
+const store = createFileStore();
+const MAX_LINE = 4_000_000; // guard against an unterminated, ever-growing line
 let buf = "";
 process.stdin.setEncoding("utf8");
 
@@ -13,8 +16,22 @@ function send(obj) {
   process.stdout.write(JSON.stringify(obj) + "\n");
 }
 
-const MAX_LINE = 4_000_000; // guard against an unterminated, ever-growing line
+async function handleLine(line) {
+  let msg;
+  try {
+    msg = JSON.parse(line);
+  } catch {
+    return send({ jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } });
+  }
+  try {
+    send(await handleMessage(msg, { store, stamp: new Date().toISOString() }));
+  } catch (e) {
+    send({ jsonrpc: "2.0", id: msg?.id ?? null, error: { code: -32603, message: e.message } });
+  }
+}
 
+// Serialize line processing so state read-modify-write stays ordered.
+let chain = Promise.resolve();
 process.stdin.on("data", (chunk) => {
   buf += chunk;
   if (buf.length > MAX_LINE && buf.indexOf("\n") === -1) {
@@ -27,19 +44,7 @@ process.stdin.on("data", (chunk) => {
     const line = buf.slice(0, nl).trim();
     buf = buf.slice(nl + 1);
     if (!line) continue;
-    let msg;
-    try {
-      msg = JSON.parse(line);
-    } catch {
-      send({ jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } });
-      continue;
-    }
-    const ctx = { stamp: new Date().toISOString() };
-    try {
-      send(handleMessage(msg, ctx));
-    } catch (e) {
-      send({ jsonrpc: "2.0", id: msg?.id ?? null, error: { code: -32603, message: e.message } });
-    }
+    chain = chain.then(() => handleLine(line));
   }
 });
 
