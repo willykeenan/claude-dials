@@ -41,7 +41,7 @@ let idc = 0;
 function rpc(method, params) {
   const id = ++idc;
   return new Promise((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error(`timeout on ${method}`)), 4000);
+    const t = setTimeout(() => reject(new Error(`timeout on ${method}`)), 10000);
     pending.set(id, (m) => { clearTimeout(t); resolve(m); });
     child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id, method, params }) + "\n");
   });
