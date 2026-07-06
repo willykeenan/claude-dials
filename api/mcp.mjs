@@ -6,6 +6,7 @@
 import { createHash } from "node:crypto";
 import { handleMessage } from "../src/mcp.mjs";
 import { createSupabaseStore } from "../src/store-supabase.mjs";
+import { baseUrl } from "../src/oauth.mjs";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
@@ -39,7 +40,10 @@ export default async function handler(req, res) {
   const auth = req.headers["authorization"] || "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
   if (!token) {
-    res.status(401).json({ error: "missing bearer token — get a free connector token at /" });
+    // Point OAuth-capable clients (claude.ai) at our resource metadata so they
+    // can discover the authorization server and run the flow.
+    res.setHeader("WWW-Authenticate", `Bearer resource_metadata="${baseUrl(req)}/.well-known/oauth-protected-resource"`);
+    res.status(401).json({ error: "authentication required", authorize: `${baseUrl(req)}/.well-known/oauth-protected-resource` });
     return;
   }
   const tokenHash = createHash("sha256").update(token).digest("hex");
