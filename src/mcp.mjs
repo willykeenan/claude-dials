@@ -5,6 +5,7 @@
 
 import { DIALS, PRESETS, PRESET_NAMES } from "./dials.mjs";
 import { renderCurrent, explainDial, opSetDial, opApplyPreset, opReset } from "./logic.mjs";
+import { validateAgainstSchema } from "./validate.mjs";
 
 export const SERVER_INFO = { name: "claude-dials", version: "0.2.0" };
 const SUPPORTED = ["2024-11-05", "2025-03-26", "2025-06-18"];
@@ -174,8 +175,18 @@ async function dispatch(id, method, params, ctx) {
     case "tools/call": {
       const tool = TOOL_MAP[params.name];
       if (!tool) return err(id, -32602, `Unknown tool: ${params.name}`);
+      // Enforce the advertised inputSchema shape at the protocol layer: reject
+      // unknown properties, missing required args, and wrong types with -32602
+      // before the handler runs (schema was documentation-only before). A
+      // non-object `arguments` container is coerced to {} (tolerant), then its
+      // fields are validated. Value-range/enum checks stay in the handler so they
+      // surface as friendly isError tool-results the model can self-correct.
+      const rawArgs = params.arguments && typeof params.arguments === "object" && !Array.isArray(params.arguments)
+        ? params.arguments : {};
+      const argCheck = validateAgainstSchema(tool.inputSchema, rawArgs, { structuralOnly: true });
+      if (!argCheck.ok) return err(id, -32602, `Invalid params for ${params.name}: ${argCheck.error}`);
       try {
-        const { text, isError } = await tool.handler(params.arguments || {}, ctx);
+        const { text, isError } = await tool.handler(rawArgs, ctx);
         return ok(id, { content: [{ type: "text", text }], isError: Boolean(isError) });
       } catch (e) {
         return ok(id, { content: [{ type: "text", text: `Tool error: ${e.message}` }], isError: true });

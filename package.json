@@ -1,6 +1,6 @@
 {
   "name": "@kestudios/claude-dials",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A behavior control panel for Claude. 0–10 dials (rigor, verification, verbosity, autonomy…) delivered over MCP. Zero dependencies.",
   "type": "module",
   "bin": {
@@ -12,7 +12,9 @@
   "scripts": {
     "start": "node src/stdio.mjs",
     "http": "node src/http.mjs",
-    "test": "node test/verify.mjs"
+    "test": "node test/units.mjs && node test/verify.mjs",
+    "eval": "node eval/obedience.mjs",
+    "eval:live": "node eval/obedience.mjs --live"
   },
   "files": ["src", "configs", "README.md", "LICENSE"],
   "keywords": ["claude", "mcp", "model-context-protocol", "anthropic", "agent", "ai", "behavior", "config"],

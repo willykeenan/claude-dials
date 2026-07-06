@@ -126,6 +126,17 @@ try {
   const nonObj = await rpc("tools/call", { name: "get_dials", arguments: 123 });
   check("non-object arguments are tolerated (coerced, not crashed)", nonObj.result?.isError === false);
 
+  // ---- schema enforcement at the protocol layer (hardening) ----
+  const extra = await rpc("tools/call", { name: "set_dial", arguments: { dial: "rigor", value: 5, sneaky: true } });
+  check("set_dial rejects unknown property with -32602", extra.error?.code === -32602 && /sneaky/.test(extra.error?.message || ""));
+  const missing = await rpc("tools/call", { name: "set_dial", arguments: { value: 5 } });
+  check("set_dial rejects missing required 'dial' with -32602", missing.error?.code === -32602 && /dial/.test(missing.error?.message || ""));
+  const wrongType = await rpc("tools/call", { name: "set_dial", arguments: { dial: "rigor", value: "nine" } });
+  check("set_dial rejects wrong-typed value with -32602", wrongType.error?.code === -32602);
+  // domain errors still surface as friendly isError (NOT -32602), so the model can self-correct
+  const domain = await rpc("tools/call", { name: "set_dial", arguments: { dial: "rigor", value: 99 } });
+  check("out-of-range value stays a friendly isError tool-result", domain.result?.isError === true && /0–10/.test(textOf(domain)));
+
   console.log(`\n${fail === 0 ? "\x1b[32m" : "\x1b[31m"}${pass} passed, ${fail} failed\x1b[0m`);
 } catch (e) {
   console.error("\x1b[31mHARNESS ERROR:\x1b[0m", e.message);

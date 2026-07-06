@@ -7,9 +7,14 @@ import { createHash } from "node:crypto";
 import { handleMessage } from "../src/mcp.mjs";
 import { createSupabaseStore } from "../src/store-supabase.mjs";
 import { baseUrl } from "../src/oauth.mjs";
+import { createRateLimiter } from "../src/ratelimit.mjs";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
+
+// Per-token limiter: ~60 calls burst, refill 2/s. Keyed by token hash so one
+// workspace's traffic can't starve another's on a shared warm instance.
+const limiter = createRateLimiter({ capacity: 60, refillPerSec: 2 });
 
 function cors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -47,6 +52,14 @@ export default async function handler(req, res) {
     return;
   }
   const tokenHash = createHash("sha256").update(token).digest("hex");
+
+  const rl = limiter.take(tokenHash);
+  if (!rl.allowed) {
+    res.setHeader("Retry-After", String(rl.retryAfter));
+    res.status(429).json({ jsonrpc: "2.0", id: null, error: { code: -32000, message: `rate limited; retry after ${rl.retryAfter}s` } });
+    return;
+  }
+
   const store = createSupabaseStore({ url: SUPABASE_URL, key: SUPABASE_KEY, tokenHash });
 
   let msg;

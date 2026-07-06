@@ -3,6 +3,12 @@
 // hash is written, lazily, on the first dial write). No email, no payment.
 
 import { randomBytes } from "node:crypto";
+import { createRateLimiter, clientKey } from "../src/ratelimit.mjs";
+
+// Per-instance limiter: ~10 provisions burst, refill 1 / 6s. Caps the anonymous
+// token minting the audit flagged as unbounded. (Distributed enforcement would
+// be a Supabase RPC sliding window; this is the zero-dep per-instance floor.)
+const limiter = createRateLimiter({ capacity: 10, refillPerSec: 1 / 6 });
 
 function cors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -14,6 +20,13 @@ export default async function handler(req, res) {
   cors(res);
   if (req.method === "OPTIONS") { res.status(204).end(); return; }
   if (req.method !== "POST") { res.status(405).json({ error: "method not allowed" }); return; }
+
+  const rl = limiter.take(clientKey(req));
+  if (!rl.allowed) {
+    res.setHeader("Retry-After", String(rl.retryAfter));
+    res.status(429).json({ error: "rate_limited", retry_after: rl.retryAfter });
+    return;
+  }
 
   const token = "dk_" + randomBytes(24).toString("hex");
   const proto = (req.headers["x-forwarded-proto"] || "https").split(",")[0];

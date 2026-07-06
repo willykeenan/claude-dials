@@ -17,13 +17,25 @@ export function newToken() {
   return "dk_" + randomBytes(24).toString("hex");
 }
 
+// Fail closed: the signing secret is load-bearing for the whole auth-code flow.
+// If it is unset/short, an unguarded createHmac would run with an undefined key
+// and every "signed" code would be forgeable — so refuse rather than degrade.
+export function requireSecret(secret) {
+  if (typeof secret !== "string" || secret.length < 16) {
+    throw new Error("DIALS_OAUTH_SECRET is unset or too short (need >=16 chars) — refusing to sign with a weak key");
+  }
+  return secret;
+}
+
 export function signCode(payload, secret) {
+  requireSecret(secret);
   const body = b64url(JSON.stringify(payload));
   const sig = createHmac("sha256", secret).update(body).digest("base64url");
   return `${body}.${sig}`;
 }
 
 export function verifyCode(code, secret) {
+  if (typeof secret !== "string" || secret.length < 16) return null; // fail closed
   const [body, sig] = String(code || "").split(".");
   if (!body || !sig) return null;
   const expect = createHmac("sha256", secret).update(body).digest("base64url");
