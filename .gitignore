@@ -1,0 +1,5 @@
+node_modules/
+*.log
+.DS_Store
+# local dial state (never commit a user's settings)
+.claude-dials/
