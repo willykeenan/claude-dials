@@ -18,6 +18,6 @@
   "keywords": ["claude", "mcp", "model-context-protocol", "anthropic", "agent", "ai", "behavior", "config"],
   "license": "MIT",
   "author": "KE Studios",
-  "homepage": "https://dials.kestudios.dev",
+  "homepage": "https://dial.kestudios.dev",
   "engines": { "node": ">=18" }
 }
