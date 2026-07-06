@@ -103,16 +103,21 @@
 
 <section id="connect">
   <div class="wrap">
-    <h2>Use it on claude.ai — free hosted connector</h2>
-    <p class="lead">No signup, no payment. Generate a private connector, add it to claude.ai, and your dials sync in the cloud. The token is your only key — it's shown once.</p>
+    <h2>Use it on claude.ai — free, no signup</h2>
+    <p class="lead">Add one custom connector. claude.ai authenticates automatically and gives you a private, cloud-synced set of dials — no account, no token to paste.</p>
     <div class="card">
-      <button class="btn" id="gen" onclick="generate()">Generate my free connector</button>
-      <div id="genout" class="hidden" style="margin-top:16px">
-        <div class="field"><span class="lbl">Endpoint</span><span class="v" id="ep"></span><button onclick="cp('ep',this)">Copy</button></div>
-        <div class="field"><span class="lbl">Token</span><span class="v" id="tok"></span><button onclick="cp('tok',this)">Copy</button></div>
-        <p class="muted-note">In claude.ai → <b>Settings → Connectors → Add custom connector</b>: paste the endpoint as the URL and the token as the bearer/auth. Then say “get my dials”. ⚠️ Save the token now — it isn't recoverable.</p>
-      </div>
-      <div id="generr" class="muted-note hidden" style="color:var(--accent)"></div>
+      <div class="field"><span class="lbl">Connector URL</span><span class="v" id="ep2">https://dial.kestudios.dev/api/mcp</span><button onclick="cp('ep2',this)">Copy</button></div>
+      <p class="muted-note">claude.ai → <b>Settings → Connectors → Add custom connector</b> → paste this URL → <b>Connect</b> (one-tap OAuth). Then say “get my dials”.</p>
+      <details style="margin-top:14px">
+        <summary style="cursor:pointer;color:var(--mut);font-size:14px">Advanced: manual token (self-hosted or non-OAuth clients)</summary>
+        <button class="btn ghost" id="gen" onclick="generate()" style="margin-top:12px">Generate a token</button>
+        <div id="genout" class="hidden" style="margin-top:12px">
+          <div class="field"><span class="lbl">Endpoint</span><span class="v" id="ep"></span><button onclick="cp('ep',this)">Copy</button></div>
+          <div class="field"><span class="lbl">Token</span><span class="v" id="tok"></span><button onclick="cp('tok',this)">Copy</button></div>
+          <p class="muted-note">Use as a Bearer token. ⚠️ shown once — not recoverable.</p>
+        </div>
+        <div id="generr" class="muted-note hidden" style="color:var(--accent)"></div>
+      </details>
     </div>
   </div>
 </section>
