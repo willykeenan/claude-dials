@@ -1,6 +1,6 @@
 {
   "name": "@kestudios/claude-dials",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A behavior control panel for Claude. 0–10 dials (rigor, verification, verbosity, autonomy…) delivered over MCP. Zero dependencies.",
   "type": "module",
   "bin": {

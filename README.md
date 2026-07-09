@@ -75,8 +75,8 @@ Or just talk: "double-check everything from now on" → Claude bumps `verificati
 npm test
 ```
 
-Spawns the real server over stdio and drives a full JSON-RPC handshake — 25 assertions across initialize, tools, resources, prompts, persistence, and error paths.
+Spawns the real server over stdio and drives a full JSON-RPC handshake — 30+ assertions across initialize, tools, resources, prompts, persistence, schema enforcement, and error paths. Also: `npm run eval` (mock obedience gate) / `npm run eval:live` (real Claude, costs tokens).
 
 ## License
 
-MIT — built by [KE Studios](https://kestudios.dev). https://dials.kestudios.dev
+MIT — built by [KE Studios](https://kestudios.dev). https://dial.kestudios.dev

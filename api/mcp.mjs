@@ -6,6 +6,8 @@
 import { createHash } from "node:crypto";
 import { handleMessage } from "../src/mcp.mjs";
 import { createSupabaseStore } from "../src/store-supabase.mjs";
+import { createSerialStore } from "../src/serial.mjs";
+import { isWorkspaceToken } from "../src/token.mjs";
 import { baseUrl } from "../src/oauth.mjs";
 import { createRateLimiter } from "../src/ratelimit.mjs";
 
@@ -51,6 +53,11 @@ export default async function handler(req, res) {
     res.status(401).json({ error: "authentication required", authorize: `${baseUrl(req)}/.well-known/oauth-protected-resource` });
     return;
   }
+  // Reject garbage tokens so they don't silently mint empty workspaces.
+  if (!isWorkspaceToken(token)) {
+    res.status(401).json({ error: "invalid_token", error_description: "expected a dk_ workspace token from /api/provision or OAuth" });
+    return;
+  }
   const tokenHash = createHash("sha256").update(token).digest("hex");
 
   const rl = limiter.take(tokenHash);
@@ -60,7 +67,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const store = createSupabaseStore({ url: SUPABASE_URL, key: SUPABASE_KEY, tokenHash });
+  const store = createSerialStore(createSupabaseStore({ url: SUPABASE_URL, key: SUPABASE_KEY, tokenHash }));
 
   let msg;
   try { msg = JSON.parse(await readBody(req)); }
@@ -70,7 +77,12 @@ export default async function handler(req, res) {
   try {
     if (Array.isArray(msg)) {
       if (msg.length === 0) { res.status(400).json({ jsonrpc: "2.0", id: null, error: { code: -32600, message: "empty batch" } }); return; }
-      const outs = (await Promise.all(msg.map((m) => handleMessage(m, ctx)))).filter(Boolean);
+      // Sequential batch — parallel RMW on the same workspace loses updates.
+      const outs = [];
+      for (const m of msg) {
+        const o = await handleMessage(m, ctx);
+        if (o) outs.push(o);
+      }
       res.status(200).json(outs);
       return;
     }

@@ -14,6 +14,7 @@ export function baseUrl(req) {
 }
 
 export function newToken() {
+  // Same shape as /api/provision so hosted MCP can validate format uniformly.
   return "dk_" + randomBytes(24).toString("hex");
 }
 

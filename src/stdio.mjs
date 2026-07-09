@@ -5,8 +5,9 @@
 
 import { handleMessage } from "./mcp.mjs";
 import { createFileStore } from "./store.mjs";
+import { createSerialStore } from "./serial.mjs";
 
-const store = createFileStore();
+const store = createSerialStore(createFileStore());
 const MAX_LINE = 4_000_000; // guard against an unterminated, ever-growing line
 let buf = "";
 process.stdin.setEncoding("utf8");

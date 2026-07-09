@@ -4,6 +4,7 @@
 
 import { randomBytes } from "node:crypto";
 import { createRateLimiter, clientKey } from "../src/ratelimit.mjs";
+import { mintWorkspaceToken } from "../src/token.mjs";
 
 // Per-instance limiter: ~10 provisions burst, refill 1 / 6s. Caps the anonymous
 // token minting the audit flagged as unbounded. (Distributed enforcement would
@@ -28,7 +29,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const token = "dk_" + randomBytes(24).toString("hex");
+  const token = mintWorkspaceToken(randomBytes);
   const proto = (req.headers["x-forwarded-proto"] || "https").split(",")[0];
   const host = req.headers["host"];
   const endpoint = `${proto}://${host}/api/mcp`;

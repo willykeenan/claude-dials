@@ -6,6 +6,10 @@ import { validateAgainstSchema } from "../src/validate.mjs";
 import { createRateLimiter } from "../src/ratelimit.mjs";
 import { requireSecret, verifyCode, signCode } from "../src/oauth.mjs";
 import { effect, JUDGES } from "../eval/judge.mjs";
+import { isWorkspaceToken, mintWorkspaceToken } from "../src/token.mjs";
+import { createSerialStore } from "../src/serial.mjs";
+import { emptyState, opSetDial, renderCurrent, validateDial } from "../src/logic.mjs";
+import { randomBytes } from "node:crypto";
 
 let pass = 0, fail = 0;
 const check = (name, cond) => cond
@@ -56,6 +60,40 @@ const nullEffect = effect("verbosity", "same text here", "same text here");
 check("identical low/high responses -> zero effect (would FAIL the gate)", nullEffect.normalized === 0);
 const realEffect = effect("rigor", "looks fine", "consider the edge case; however the boundary and failure mode differ, alternatively...");
 check("thorough response out-scores terse on rigor", realEffect.normalized > 0.15);
+
+// ---- token format ----
+const minted = mintWorkspaceToken(randomBytes);
+check("minted token matches workspace format", isWorkspaceToken(minted));
+check("rejects bare junk tokens", !isWorkspaceToken("bogus") && !isWorkspaceToken("dk_short") && !isWorkspaceToken(""));
+check("rejects almost-right length", !isWorkspaceToken("dk_" + "a".repeat(47)));
+
+// ---- dial value rounding ----
+check("validateDial rounds 8.6 -> 9", validateDial("rigor", 8.6).num === 9);
+check("validateDial accepts integer 0", validateDial("verbosity", 0).ok);
+
+// ---- instruction surface ----
+const rendered = renderCurrent({ values: { ...emptyState().values, rigor: 9, verbosity: 1 }, activePreset: "custom", updatedAt: null });
+check("renderCurrent marks high rigor as binding extreme", /Rigor 9\/10 \(binding\)/.test(rendered));
+check("renderCurrent marks low verbosity as binding extreme", /Verbosity 1\/10 \(binding\)/.test(rendered));
+check("renderCurrent uses MUST framing in table", /You MUST/.test(rendered));
+
+// ---- serial store: concurrent updates must not lose writes ----
+{
+  let state = emptyState();
+  const raw = {
+    async load() { return JSON.parse(JSON.stringify(state)); },
+    async save(s) { state = JSON.parse(JSON.stringify(s)); return state; },
+  };
+  const serial = createSerialStore(raw);
+  await Promise.all([
+    opSetDial(serial, "rigor", 9, "t1"),
+    opSetDial(serial, "verbosity", 1, "t2"),
+    opSetDial(serial, "caution", 8, "t3"),
+  ]);
+  check("serial store keeps concurrent rigor write", state.values.rigor === 9);
+  check("serial store keeps concurrent verbosity write", state.values.verbosity === 1);
+  check("serial store keeps concurrent caution write", state.values.caution === 8);
+}
 
 console.log(`\n${fail === 0 ? "\x1b[32m" : "\x1b[31m"}${pass} passed, ${fail} failed\x1b[0m`);
 process.exit(fail === 0 ? 0 : 1);

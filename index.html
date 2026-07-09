@@ -78,7 +78,7 @@
   <div class="wrap">
     <div class="kicker">a free tool by KE Studios</div>
     <h1>Give Claude a <span class="g">control panel</span>.</h1>
-    <p class="sub">Eight 0–10 dials — rigor, verification, verbosity, autonomy — that Claude reads over MCP and actually follows. Tune how it works from the outside, as data. The setting sticks across every chat.</p>
+    <p class="sub">Eight 0–10 dials — rigor, verification, verbosity, autonomy — that Claude reads over MCP as binding constraints. Tune how it works from the outside, as data. The setting sticks across every chat.</p>
     <div class="badges">
       <span class="pill">Free</span><span class="pill">No signup</span><span class="pill">Zero dependencies</span>
       <span class="pill">Claude Code · Desktop · claude.ai</span>
@@ -153,7 +153,7 @@ DIALS_TOKEN="a-long-random-string" node claude-dials/src/http.mjs
     <div class="grid3">
       <div class="card step"><h4>Zero dependencies</h4><p>The MCP wire protocol is implemented directly — no SDK, no supply-chain surface.</p></div>
       <div class="card step"><h4>Your key, your dials</h4><p>The hosted connector stores only a hash of your token. A DB leak never exposes it.</p></div>
-      <div class="card step"><h4>Verified</h4><p>A 27-assertion end-to-end suite drives the real server over JSON-RPC on every commit.</p></div>
+      <div class="card step"><h4>Verified</h4><p>50+ unit + protocol tests drive the real server over JSON-RPC on every commit, plus a behavioral-obedience gate.</p></div>
     </div>
   </div>
 </section>
@@ -170,14 +170,14 @@ DIALS_TOKEN="a-long-random-string" node claude-dials/src/http.mjs
 
 <script>
 const DIALS=[
- {name:"rigor",label:"Rigor",low:"quick first-pass",high:"exhaustive reasoning",def:6,bands:[[0,3,"Fast, obvious solution. Low effort."],[4,6,"Solid work; cover the main cases."],[7,8,"High effort: edge cases, weigh alternatives."],[9,10,"Exhaustive. Max effort. Assume nothing."]]},
- {name:"context_depth",label:"Context depth",low:"prompt alone",high:"read everything",def:6,bands:[[0,3,"Act on the prompt as given; minimal reading."],[4,6,"Read the directly-relevant files."],[7,8,"Read surrounding code & conventions first."],[9,10,"Full context: adjacent modules, history — then act."]]},
- {name:"verification",label:"Verification",low:"assert",high:"prove it",def:6,bands:[[0,3,"State the result; no run."],[4,6,"Sanity-check the happy path."],[7,8,"Run it; test edge cases; report output."],[9,10,"Run & show evidence before saying 'done'."]]},
- {name:"self_review",label:"Self-review",low:"first draft",high:"adversarial",def:5,bands:[[0,3,"Ship the first draft."],[4,6,"Quick re-read for obvious mistakes."],[7,8,"Critique pass: 'how is this wrong?' then revise."],[9,10,"Try hard to refute my own work; only survivors ship."]]},
- {name:"verbosity",label:"Verbosity",low:"one-liner",high:"exhaustive",def:3,bands:[[0,2,"One-line verdict + result only."],[3,4,"Verdict first, then a few tight lines."],[5,7,"Full explanation with reasoning."],[8,10,"Exhaustive: tradeoffs, alternatives, caveats."]]},
- {name:"autonomy",label:"Autonomy",low:"ask first",high:"just do it",def:6,bands:[[0,2,"Confirm every action; propose and wait."],[3,5,"Confirm anything irreversible; proceed otherwise."],[6,8,"Just do it; report after. Confirm only money/publish."],[9,10,"Full autonomy; stop only for money or public launch."]]},
- {name:"novelty",label:"Novelty",low:"proven",high:"bleeding-edge",def:5,bands:[[0,3,"Boring, proven patterns; no surprises."],[4,6,"Mostly proven; one calculated bet."],[7,8,"Reach for new tools; accept some churn."],[9,10,"Bleeding edge; experimental by default."]]},
- {name:"caution",label:"Caution",low:"move fast",high:"review-grade",def:5,bands:[[0,3,"Minimal friction; move fast."],[4,6,"Sensible checks; avoid obvious trouble."],[7,8,"Careful with claims and data."],[9,10,"Treat as if legal/security will review."]]},
+ {name:"rigor",label:"Rigor",low:"quick first-pass",high:"exhaustive reasoning",def:6,bands:[[0,3,"MUST: first workable answer only. Skip edge-case tours."],[4,6,"MUST: solid main path; note 1–2 failure modes."],[7,8,"MUST: enumerate edge cases + alternatives; weigh tradeoffs."],[9,10,"MUST: exhaustive — assumptions, failure modes, alternatives."]]},
+ {name:"context_depth",label:"Context depth",low:"prompt alone",high:"read everything",def:6,bands:[[0,3,"MUST: act on the prompt alone."],[4,6,"MUST: read only directly required files."],[7,8,"MUST: read callers, callees, conventions before editing."],[9,10,"MUST: map adjacent modules + patterns before any change."]]},
+ {name:"verification",label:"Verification",low:"assert",high:"prove it",def:6,bands:[[0,3,"MUST: state the result; no run unless asked."],[4,6,"MUST: sanity-check the happy path."],[7,8,"MUST: run it; paste actual output."],[9,10,"MUST: never say done without evidence / explicit can't-run."]]},
+ {name:"self_review",label:"Self-review",low:"first draft",high:"adversarial",def:5,bands:[[0,3,"MUST: ship the first draft."],[4,6,"MUST: one quick re-read, then ship."],[7,8,"MUST: critique pass — how is this wrong? — then deliver."],[9,10,"MUST: adversarial self-attack; list what you checked."]]},
+ {name:"verbosity",label:"Verbosity",low:"one-liner",high:"exhaustive",def:3,bands:[[0,2,"MUST: one-line verdict + result only."],[3,4,"MUST: verdict first, then ≤5 tight lines."],[5,7,"MUST: full explanation, still scannable."],[8,10,"MUST: exhaustive — tradeoffs, alternatives, caveats."]]},
+ {name:"autonomy",label:"Autonomy",low:"ask first",high:"just do it",def:6,bands:[[0,2,"MUST: propose and wait; no edit/run until confirmed."],[3,5,"MUST: confirm irreversible/outward; proceed on local work."],[6,8,"MUST: just do it; confirm only money/publish/delete/secrets."],[9,10,"MUST: full autonomy; stop only for money or public launch."]]},
+ {name:"novelty",label:"Novelty",low:"proven",high:"bleeding-edge",def:5,bands:[[0,3,"MUST: proven stacks only; reject experimental deps."],[4,6,"MUST: mostly proven; at most one calculated new tool."],[7,8,"MUST: prefer modern approaches when they clearly win."],[9,10,"MUST: experimental by default; note risks."]]},
+ {name:"caution",label:"Caution",low:"move fast",high:"review-grade",def:5,bands:[[0,3,"MUST: minimize friction; ship fast."],[4,6,"MUST: sensible checks; avoid obvious foot-guns."],[7,8,"MUST: be explicit about risk on claims and data."],[9,10,"MUST: review-grade posture; flag residual risk."]]},
 ];
 const PRESETS={
  default:{rigor:6,context_depth:6,verification:6,self_review:5,verbosity:3,autonomy:6,novelty:5,caution:5},

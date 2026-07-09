@@ -85,18 +85,20 @@ try {
 
   await rpc("tools/call", { name: "reset_dials", arguments: {} });
   const get1 = await rpc("tools/call", { name: "get_dials", arguments: {} });
-  check("get_dials shows Rigor at default 6", /Rigor \| \*\*6\*\*/.test(textOf(get1)));
+  check("get_dials shows Rigor at default 6", /Rigor \| \*\*6\*\*\/10/.test(textOf(get1)));
+  check("get_dials uses binding/mandatory framing", /binding|MUST|mandatory/i.test(textOf(get1)));
 
   const set1 = await rpc("tools/call", { name: "set_dial", arguments: { dial: "rigor", value: 9 } });
   check("set_dial rigor=9 succeeds (not isError)", set1.result?.isError === false && textOf(set1).includes("rigor → 9"));
 
   const get2 = await rpc("tools/call", { name: "get_dials", arguments: {} });
-  check("set_dial persisted (get_dials now shows Rigor 9)", /Rigor \| \*\*9\*\*/.test(textOf(get2)));
+  check("set_dial persisted (get_dials now shows Rigor 9)", /Rigor \| \*\*9\*\*\/10/.test(textOf(get2)));
+  check("high rigor surfaces in binding extremes", /Rigor 9\/10 \(binding\)/.test(textOf(get2)));
 
   const preset = await rpc("tools/call", { name: "apply_preset", arguments: { preset: "fable" } });
   check("apply_preset fable succeeds", preset.result?.isError === false && textOf(preset).toLowerCase().includes("fable"));
   const get3 = await rpc("tools/call", { name: "get_dials", arguments: {} });
-  check("fable preset sets Verification to 9", /Verification \| \*\*9\*\*/.test(textOf(get3)));
+  check("fable preset sets Verification to 9", /Verification \| \*\*9\*\*\/10/.test(textOf(get3)));
 
   const bad1 = await rpc("tools/call", { name: "set_dial", arguments: { dial: "bogus", value: 3 } });
   check("set_dial rejects unknown dial (isError + message)", bad1.result?.isError === true && /Unknown dial/.test(textOf(bad1)));
@@ -104,7 +106,7 @@ try {
   check("set_dial rejects out-of-range value", bad2.result?.isError === true && /0–10/.test(textOf(bad2)));
 
   const readCur = await rpc("resources/read", { uri: "dials://current" });
-  check("resources/read dials://current returns markdown", readCur.result?.contents?.[0]?.text?.includes("Current Dials"));
+  check("resources/read dials://current returns markdown", /Operating dials|Full dial board/.test(readCur.result?.contents?.[0]?.text || ""));
   const readSchema = await rpc("resources/read", { uri: "dials://schema" });
   let schemaOk = false;
   try { schemaOk = JSON.parse(readSchema.result.contents[0].text).dials.length === 8; } catch {}

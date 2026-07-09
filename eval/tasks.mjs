@@ -34,6 +34,12 @@ export const TASKS = [
     metric: "verification",
     prompt: "Fix this: `function isEven(n){ return n % 2 }` and tell me it works.",
   },
+  {
+    id: "verbosity_debug",
+    dial: "verbosity",
+    metric: "verbosity",
+    prompt: "What does HTTP 429 mean?",
+  },
 ];
 
 // Mock responses: a terse (low-dial) and a thorough (high-dial) canned answer per
@@ -61,5 +67,9 @@ export const MOCK = {
   verification_fix: {
     low: "function isEven(n){ return n % 2 === 0 } — that works.",
     high: "The bug: `n % 2` returns 1 (truthy) for odds and 0 (falsy) for evens, and it's not even a boolean. Fixed:\n```js\nfunction isEven(n){ return n % 2 === 0 }\n```\nLet me verify with a few test cases: isEven(2) → true, isEven(3) → false, isEven(0) → true, isEven(-4) → true. I ran these and each matches the expected output, so the fix checks out. One thing to test at the boundary: non-integer input like 2.5 returns false, which is the sane result.",
+  },
+  verbosity_debug: {
+    low: "Too many requests — slow down.",
+    high: "HTTP 429 means the server is rate-limiting you: you sent more requests than the quota allows in a window. Typical fixes are backoff with Retry-After, cache responses, batch work, or raise the plan limit. It's a client-side throttle signal, not a bug in your auth, unless you're accidentally looping.",
   },
 };

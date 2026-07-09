@@ -11,10 +11,10 @@ export const DIALS = [
     default: 6,
     drives: "reasoning effort + willingness to enumerate edge cases and multi-step",
     bands: [
-      ["0-3", "Fast, obvious solution. Low effort. Don't belabor it."],
-      ["4-6", "Solid work; cover the main cases."],
-      ["7-8", "High effort: enumerate edge cases, weigh alternatives."],
-      ["9-10", "Exhaustive. Max effort. Assume nothing; break the problem down fully."],
+      ["0-3", "MUST: first workable answer only. Skip edge-case tours. Do not over-engineer."],
+      ["4-6", "MUST: solid main path; note the 1–2 most likely failure modes, nothing more."],
+      ["7-8", "MUST: enumerate edge cases and at least one alternative; weigh tradeoffs before deciding."],
+      ["9-10", "MUST: exhaustive breakdown — list assumptions, failure modes, alternatives, and why you chose this. Assume nothing."],
     ],
   },
   {
@@ -25,10 +25,10 @@ export const DIALS = [
     default: 6,
     drives: "how much I read/trace before acting",
     bands: [
-      ["0-3", "Act on the prompt as given; minimal reading."],
-      ["4-6", "Read the directly-relevant files."],
-      ["7-8", "Read surrounding code, callers, and conventions before touching anything."],
-      ["9-10", "Full context: adjacent modules, history, existing patterns — then act."],
+      ["0-3", "MUST: act on the prompt alone. Do not open extra files unless blocked."],
+      ["4-6", "MUST: read only the files directly named or obviously required."],
+      ["7-8", "MUST: before editing, read callers, callees, and local conventions."],
+      ["9-10", "MUST: map adjacent modules, existing patterns, and recent history before any change."],
     ],
   },
   {
@@ -39,10 +39,10 @@ export const DIALS = [
     default: 6,
     drives: "proof before claiming done",
     bands: [
-      ["0-3", "State the result; no run."],
-      ["4-6", "Sanity-check the happy path."],
-      ["7-8", "Run it; test edge cases; report actual output."],
-      ["9-10", "Run/test and show evidence before saying 'done'. Never claim unverified."],
+      ["0-3", "MUST: state the result. Do not run tests or commands unless asked."],
+      ["4-6", "MUST: sanity-check the happy path (one quick check is enough)."],
+      ["7-8", "MUST: run the relevant command/test; paste actual output for the main path + one edge."],
+      ["9-10", "MUST: never say done without evidence. Run tests/commands and show outputs. If you cannot run, say so explicitly."],
     ],
   },
   {
@@ -53,10 +53,10 @@ export const DIALS = [
     default: 5,
     drives: "whether I critique my own work before handing it over",
     bands: [
-      ["0-3", "Ship the first draft."],
-      ["4-6", "Quick re-read for obvious mistakes."],
-      ["7-8", "Deliberate critique pass: 'how is this wrong?' then revise."],
-      ["9-10", "Adversarial: try hard to refute my own work; only survivors ship."],
+      ["0-3", "MUST: ship the first draft. No second pass."],
+      ["4-6", "MUST: one quick re-read for obvious mistakes, then ship."],
+      ["7-8", "MUST: deliberate critique pass — ask 'how is this wrong?', fix findings, then deliver."],
+      ["9-10", "MUST: adversarial self-attack (wrong inputs, races, security, silent failures). Only survivors ship; list what you checked."],
     ],
   },
   {
@@ -67,10 +67,10 @@ export const DIALS = [
     default: 3,
     drives: "how much I say back to you (NOT how hard I work)",
     bands: [
-      ["0-2", "One-line verdict + result only."],
-      ["3-4", "Verdict first, then a few tight supporting lines."],
-      ["5-7", "Full explanation with reasoning."],
-      ["8-10", "Exhaustive: tradeoffs, alternatives, caveats."],
+      ["0-2", "MUST: one-line verdict + result only. No preamble, no recap."],
+      ["3-4", "MUST: verdict first, then ≤5 tight supporting lines. No essays."],
+      ["5-7", "MUST: full explanation with reasoning, still scannable (headers/bullets ok)."],
+      ["8-10", "MUST: exhaustive write-up — tradeoffs, alternatives, caveats, and when you'd choose otherwise."],
     ],
   },
   {
@@ -81,10 +81,10 @@ export const DIALS = [
     default: 6,
     drives: "how much I confirm before acting",
     bands: [
-      ["0-2", "Confirm every action; propose and wait."],
-      ["3-5", "Confirm anything outward-facing or irreversible; proceed on the rest."],
-      ["6-8", "Just do it; report after. Confirm only money/publish/delete."],
-      ["9-10", "Full autonomy; stop only for money movement or public launch."],
+      ["0-2", "MUST: propose the plan and wait. Do not edit/run/send until confirmed."],
+      ["3-5", "MUST: confirm anything irreversible or outward-facing; proceed on local/reversible work."],
+      ["6-8", "MUST: just do it and report after. Confirm only money, publish, delete, or secrets."],
+      ["9-10", "MUST: full autonomy. Stop only for money movement or public launch."],
     ],
   },
   {
@@ -95,10 +95,10 @@ export const DIALS = [
     default: 5,
     drives: "appetite for new tools/approaches (tech risk, not capital risk)",
     bands: [
-      ["0-3", "Boring, proven stacks and patterns; no surprises."],
-      ["4-6", "Mostly proven; one calculated bet where it pays."],
-      ["7-8", "Reach for new tools/approaches; accept some churn."],
-      ["9-10", "Bleeding edge; experimental by default."],
+      ["0-3", "MUST: boring proven stacks/patterns only. Reject experimental deps."],
+      ["4-6", "MUST: mostly proven; at most one calculated new tool where payoff is clear."],
+      ["7-8", "MUST: prefer modern/new approaches when they clearly win; accept some churn."],
+      ["9-10", "MUST: experimental by default — try the frontier approach first, note risks."],
     ],
   },
   {
@@ -109,10 +109,10 @@ export const DIALS = [
     default: 5,
     drives: "care around claims, data, and irreversible actions",
     bands: [
-      ["0-3", "Minimal friction; move fast."],
-      ["4-6", "Sensible checks; avoid obvious trouble."],
-      ["7-8", "Careful with claims and data; explicit about risk."],
-      ["9-10", "Treat as if legal/security will review; strictest posture."],
+      ["0-3", "MUST: minimize friction; ship fast. Skip formal risk notes."],
+      ["4-6", "MUST: sensible checks; avoid obvious foot-guns."],
+      ["7-8", "MUST: be explicit about risk on claims, data handling, and irreversible steps."],
+      ["9-10", "MUST: review-grade posture (legal/security would read this). No speculative claims; flag residual risk."],
     ],
   },
 ];

@@ -8,12 +8,13 @@ import { createServer } from "node:http";
 import { timingSafeEqual } from "node:crypto";
 import { handleMessage } from "./mcp.mjs";
 import { createFileStore } from "./store.mjs";
+import { createSerialStore } from "./serial.mjs";
 
 const PORT = Number(process.env.PORT || 8787);
 const PATH = process.env.MCP_PATH || "/mcp";
 const TOKEN = process.env.DIALS_TOKEN;
 const MAX_BODY = 1e6; // 1 MB
-const store = createFileStore();
+const store = createSerialStore(createFileStore());
 
 function cors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -78,7 +79,12 @@ const server = createServer((req, res) => {
     const ctx = { store, stamp: new Date().toISOString() };
     if (Array.isArray(msg)) {
       if (msg.length === 0) return json(res, 400, { jsonrpc: "2.0", id: null, error: { code: -32600, message: "Invalid Request: empty batch" } });
-      const outs = (await Promise.all(msg.map((m) => handleMessage(m, ctx)))).filter(Boolean);
+      // Sequential: parallel batch on a shared store can lose dial updates.
+      const outs = [];
+      for (const m of msg) {
+        const o = await handleMessage(m, ctx);
+        if (o) outs.push(o);
+      }
       return json(res, 200, outs);
     }
     const out = await handleMessage(msg, ctx);

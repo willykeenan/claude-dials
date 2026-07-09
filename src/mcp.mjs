@@ -7,7 +7,7 @@ import { DIALS, PRESETS, PRESET_NAMES } from "./dials.mjs";
 import { renderCurrent, explainDial, opSetDial, opApplyPreset, opReset } from "./logic.mjs";
 import { validateAgainstSchema } from "./validate.mjs";
 
-export const SERVER_INFO = { name: "claude-dials", version: "0.2.0" };
+export const SERVER_INFO = { name: "claude-dials", version: "0.2.1" };
 const SUPPORTED = ["2024-11-05", "2025-03-26", "2025-06-18"];
 const DEFAULT_PROTOCOL = "2024-11-05";
 
@@ -16,7 +16,7 @@ const TOOLS = [
   {
     name: "get_dials",
     description:
-      "Read the user's current behavior dials and follow them. Call this at the start of a task to know how the user wants you to work (rigor, verification, verbosity, autonomy, etc.).",
+      "REQUIRED at the start of every task: load the user's binding behavior dials (rigor, verification, verbosity, autonomy, …) and follow them exactly for the rest of the task. Higher is not always better.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
     handler: async (_args, ctx) => ({ text: renderCurrent(await ctx.store.load()) }),
   },
@@ -120,7 +120,7 @@ const PROMPTS = [
           content: {
             type: "text",
             text:
-              "Adopt the following behavior settings for our session. Each dial's band is a concrete instruction; honor the exact value rather than defaulting to 'more'.\n\n" +
+              "These dials are binding for this session. Obey every band exactly — low values are as mandatory as high ones. Do not default to 'more thorough' when a dial says otherwise.\n\n" +
               renderCurrent(await ctx.store.load()),
           },
         },
