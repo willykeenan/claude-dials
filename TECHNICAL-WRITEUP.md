@@ -1,5 +1,7 @@
 # Dials — Technical Writeup
 
+> Historical archive: this experiment was retired on 2026-07-09. The hosted connector and package entry point are disabled.
+
 **A behavior control panel for Claude, delivered as an MCP server.** Eight 0–10 dials
 (rigor, verification, verbosity, autonomy, …) that Claude reads over the Model Context
 Protocol and follows. Live at [dial.kestudios.dev](https://dial.kestudios.dev) as a

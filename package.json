@@ -1,17 +1,18 @@
 {
   "name": "@kestudios/claude-dials",
   "version": "0.2.1",
-  "description": "A behavior control panel for Claude. 0–10 dials (rigor, verification, verbosity, autonomy…) delivered over MCP. Zero dependencies.",
+  "private": true,
+  "description": "Archived KE Studios experiment. Retired 2026-07-09.",
   "type": "module",
   "bin": {
-    "claude-dials": "src/stdio.mjs"
+    "claude-dials": "src/retired-cli.mjs"
   },
   "exports": {
-    ".": "./src/mcp.mjs"
+    ".": "./src/retired-cli.mjs"
   },
   "scripts": {
-    "start": "node src/stdio.mjs",
-    "http": "node src/http.mjs",
+    "start": "node src/retired-cli.mjs",
+    "http": "node src/retired-cli.mjs",
     "test": "node test/units.mjs && node test/verify.mjs",
     "eval": "node eval/obedience.mjs",
     "eval:live": "node eval/obedience.mjs --live"
@@ -20,6 +21,6 @@
   "keywords": ["claude", "mcp", "model-context-protocol", "anthropic", "agent", "ai", "behavior", "config"],
   "license": "MIT",
   "author": "KE Studios",
-  "homepage": "https://dial.kestudios.dev",
+  "homepage": "https://kestudios.dev",
   "engines": { "node": ">=18" }
 }

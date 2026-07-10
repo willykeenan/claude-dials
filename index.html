@@ -1,217 +1,26 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Dials — a behavior control panel for Claude</title>
-<meta name="description" content="Give Claude 0–10 sliders — rigor, verification, verbosity, autonomy — that it reads over MCP and actually follows. Free, zero-signup hosted connector or one-line local install." />
-<meta property="og:title" content="Dials — a behavior control panel for Claude" />
-<meta property="og:description" content="Tune how Claude works from the outside, as data. Free. Works in Claude Code, Desktop, and claude.ai." />
-<style>
-  :root{
-    --bg:#0d0c0b; --panel:#161412; --panel2:#1e1b18; --line:#2a2622;
-    --ink:#f4efe9; --mut:#a99f93; --dim:#6f665c;
-    --accent:#d97757; --accent2:#e8a87c; --good:#7fb069;
-    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0}
-  body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased}
-  a{color:var(--accent2);text-decoration:none} a:hover{text-decoration:underline}
-  .wrap{max-width:1000px;margin:0 auto;padding:0 22px}
-  .mono{font-family:var(--mono)}
-  .pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:4px 11px}
-  header{padding:74px 0 34px;text-align:center}
-  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
-  h1{font-size:clamp(38px,6vw,64px);line-height:1.02;margin:16px 0 10px;letter-spacing:-.02em}
-  h1 .g{background:linear-gradient(120deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
-  .sub{font-size:clamp(16px,2.4vw,20px);color:var(--mut);max-width:660px;margin:0 auto 22px}
-  .badges{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:26px}
-  .cta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-  .btn{background:var(--accent);color:#1a0f0a;border:0;border-radius:10px;padding:12px 20px;font-weight:700;cursor:pointer;font-size:15px}
-  .btn:active{transform:translateY(1px)}
-  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
-  section{padding:44px 0;border-top:1px solid var(--line)}
-  h2{font-size:clamp(24px,3.4vw,32px);letter-spacing:-.01em;margin:0 0 6px}
-  .lead{color:var(--mut);max-width:660px;margin:0 0 26px}
-  .demo{display:grid;grid-template-columns:1.1fr .9fr;gap:20px}
-  @media(max-width:760px){.demo{grid-template-columns:1fr}}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px}
-  .presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
-  .presets button{font-family:var(--mono);font-size:12px;color:var(--mut);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer}
-  .presets button.on{color:#1a0f0a;background:var(--accent);border-color:var(--accent);font-weight:600}
-  .dial{margin:14px 0}
-  .dial .top{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;margin-bottom:5px}
-  .dial .nm{font-weight:600} .dial .val{font-family:var(--mono);color:var(--accent2)}
-  .dial .poles{display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-top:3px}
-  input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:5px;border-radius:99px;background:var(--panel2);outline:none;margin:2px 0}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid #000}
-  input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid #000}
-  .behavior{position:sticky;top:16px}
-  .behavior h3{margin:0 0 4px;font-size:13px;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);font-family:var(--mono)}
-  .brow{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px}
-  .brow:last-child{border-bottom:0}
-  .brow .bn{color:var(--accent2);min-width:96px;font-family:var(--mono);font-size:12px;padding-top:1px}
-  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-  @media(max-width:760px){.grid3{grid-template-columns:1fr}}
-  .step .n{font-family:var(--mono);color:var(--accent);font-size:13px}
-  .step h4{margin:6px 0 5px;font-size:17px} .step p{margin:0;color:var(--mut);font-size:14px}
-  .tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
-  .tabs button{font-family:var(--mono);font-size:13px;color:var(--mut);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 13px;cursor:pointer}
-  .tabs button.on{color:#1a0f0a;background:var(--accent);border-color:var(--accent);font-weight:600}
-  pre{background:#000;border:1px solid var(--line);border-radius:12px;padding:16px;overflow-x:auto;margin:0;font-family:var(--mono);font-size:13px;color:#e6ddd3}
-  .tabpane{display:none} .tabpane.on{display:block}
-  .field{display:flex;align-items:center;gap:10px;background:#000;border:1px solid var(--line);border-radius:10px;padding:11px 14px;font-family:var(--mono);font-size:13px;margin:8px 0;word-break:break-all}
-  .field .lbl{color:var(--dim);min-width:78px;font-size:11px;text-transform:uppercase;letter-spacing:.08em}
-  .field .v{flex:1;color:#e6ddd3}
-  .field button{background:var(--panel2);color:var(--mut);border:1px solid var(--line);border-radius:7px;padding:5px 10px;cursor:pointer;font-size:11px;white-space:nowrap}
-  .muted-note{color:var(--dim);font-size:13px;margin-top:12px}
-  footer{padding:40px 0 60px;border-top:1px solid var(--line);color:var(--dim);font-size:14px;text-align:center}
-  footer a{color:var(--mut)} .flinks{display:flex;gap:18px;justify-content:center;margin-bottom:12px;flex-wrap:wrap}
-  .hidden{display:none}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Retired — KE Studios</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0b0d10; color: #eef1f5; }
+    main { width: min(560px, calc(100% - 40px)); }
+    p { color: #aeb6c2; line-height: 1.65; }
+    a { color: #eef1f5; text-underline-offset: 4px; }
+    .eyebrow { color: #d97757; font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+    h1 { margin: 14px 0 12px; font-size: clamp(32px, 7vw, 54px); letter-spacing: -.04em; }
+  </style>
 </head>
 <body>
-
-<header>
-  <div class="wrap">
-    <div class="kicker">a free tool by KE Studios</div>
-    <h1>Give Claude a <span class="g">control panel</span>.</h1>
-    <p class="sub">Eight 0–10 dials — rigor, verification, verbosity, autonomy — that Claude reads over MCP as binding constraints. Tune how it works from the outside, as data. The setting sticks across every chat.</p>
-    <div class="badges">
-      <span class="pill">Free</span><span class="pill">No signup</span><span class="pill">Zero dependencies</span>
-      <span class="pill">Claude Code · Desktop · claude.ai</span>
-    </div>
-    <div class="cta">
-      <button class="btn" onclick="document.getElementById('connect').scrollIntoView({behavior:'smooth'})">Get your free connector</button>
-      <button class="btn ghost" onclick="document.getElementById('install').scrollIntoView({behavior:'smooth'})">Install locally</button>
-    </div>
-  </div>
-</header>
-
-<section id="demo">
-  <div class="wrap">
-    <h2>Drag a dial. Watch the instruction change.</h2>
-    <p class="lead">This is the real schema the server ships — the same text Claude receives. Pick a preset or drag any slider.</p>
-    <div class="demo">
-      <div class="card"><div class="presets" id="presets"></div><div id="dials"></div></div>
-      <div class="card behavior"><h3>What Claude does right now</h3><div id="behavior"></div></div>
-    </div>
-  </div>
-</section>
-
-<section id="connect">
-  <div class="wrap">
-    <h2>Use it on claude.ai — free, no signup</h2>
-    <p class="lead">Add one custom connector. claude.ai authenticates automatically and gives you a private, cloud-synced set of dials — no account, no token to paste.</p>
-    <div class="card">
-      <div class="field"><span class="lbl">Connector URL</span><span class="v" id="ep2">https://dial.kestudios.dev/api/mcp</span><button onclick="cp('ep2',this)">Copy</button></div>
-      <p class="muted-note">claude.ai → <b>Settings → Connectors → Add custom connector</b> → paste this URL → <b>Connect</b> (one-tap OAuth). Then say “get my dials”.</p>
-      <details style="margin-top:14px">
-        <summary style="cursor:pointer;color:var(--mut);font-size:14px">Advanced: manual token (self-hosted or non-OAuth clients)</summary>
-        <button class="btn ghost" id="gen" onclick="generate()" style="margin-top:12px">Generate a token</button>
-        <div id="genout" class="hidden" style="margin-top:12px">
-          <div class="field"><span class="lbl">Endpoint</span><span class="v" id="ep"></span><button onclick="cp('ep',this)">Copy</button></div>
-          <div class="field"><span class="lbl">Token</span><span class="v" id="tok"></span><button onclick="cp('tok',this)">Copy</button></div>
-          <p class="muted-note">Use as a Bearer token. ⚠️ shown once — not recoverable.</p>
-        </div>
-        <div id="generr" class="muted-note hidden" style="color:var(--accent)"></div>
-      </details>
-    </div>
-  </div>
-</section>
-
-<section id="install">
-  <div class="wrap">
-    <h2>Or install locally</h2>
-    <p class="lead">Runs on your machine, state in a plain JSON file, nothing phones home.</p>
-    <div class="tabs">
-      <button class="on" onclick="tab('cc',this)">Claude Code</button>
-      <button onclick="tab('cd',this)">Claude Desktop</button>
-      <button onclick="tab('sh',this)">Self-host connector</button>
-    </div>
-    <div id="cc" class="tabpane on"><pre>claude mcp add dials -- npx -y github:willykeenan/claude-dials
-
-# then: "get my dials"  ·  "set rigor to 9"  ·  "apply the careful preset"</pre></div>
-    <div id="cd" class="tabpane"><pre>// claude_desktop_config.json
-{
-  "mcpServers": {
-    "dials": { "command": "npx", "args": ["-y", "github:willykeenan/claude-dials"] }
-  }
-}</pre></div>
-    <div id="sh" class="tabpane"><pre># run the HTTP transport yourself and point a connector at it
-git clone https://github.com/willykeenan/claude-dials
-DIALS_TOKEN="a-long-random-string" node claude-dials/src/http.mjs
-# exposes POST http://localhost:8787/mcp  (add it as a custom connector)</pre></div>
-  </div>
-</section>
-
-<section>
-  <div class="wrap">
-    <h2>Built to be trusted</h2>
-    <div class="grid3">
-      <div class="card step"><h4>Zero dependencies</h4><p>The MCP wire protocol is implemented directly — no SDK, no supply-chain surface.</p></div>
-      <div class="card step"><h4>Your key, your dials</h4><p>The hosted connector stores only a hash of your token. A DB leak never exposes it.</p></div>
-      <div class="card step"><h4>Verified</h4><p>50+ unit + protocol tests drive the real server over JSON-RPC on every commit, plus a behavioral-obedience gate.</p></div>
-    </div>
-  </div>
-</section>
-
-<footer>
-  <div class="wrap">
-    <div class="flinks">
-      <a href="https://github.com/willykeenan/claude-dials">GitHub</a>
-      <a href="https://kestudios.dev">KE Studios</a>
-    </div>
-    Dials — a behavior control panel for Claude. Free &amp; MIT-licensed.
-  </div>
-</footer>
-
-<script>
-const DIALS=[
- {name:"rigor",label:"Rigor",low:"quick first-pass",high:"exhaustive reasoning",def:6,bands:[[0,3,"MUST: first workable answer only. Skip edge-case tours."],[4,6,"MUST: solid main path; note 1–2 failure modes."],[7,8,"MUST: enumerate edge cases + alternatives; weigh tradeoffs."],[9,10,"MUST: exhaustive — assumptions, failure modes, alternatives."]]},
- {name:"context_depth",label:"Context depth",low:"prompt alone",high:"read everything",def:6,bands:[[0,3,"MUST: act on the prompt alone."],[4,6,"MUST: read only directly required files."],[7,8,"MUST: read callers, callees, conventions before editing."],[9,10,"MUST: map adjacent modules + patterns before any change."]]},
- {name:"verification",label:"Verification",low:"assert",high:"prove it",def:6,bands:[[0,3,"MUST: state the result; no run unless asked."],[4,6,"MUST: sanity-check the happy path."],[7,8,"MUST: run it; paste actual output."],[9,10,"MUST: never say done without evidence / explicit can't-run."]]},
- {name:"self_review",label:"Self-review",low:"first draft",high:"adversarial",def:5,bands:[[0,3,"MUST: ship the first draft."],[4,6,"MUST: one quick re-read, then ship."],[7,8,"MUST: critique pass — how is this wrong? — then deliver."],[9,10,"MUST: adversarial self-attack; list what you checked."]]},
- {name:"verbosity",label:"Verbosity",low:"one-liner",high:"exhaustive",def:3,bands:[[0,2,"MUST: one-line verdict + result only."],[3,4,"MUST: verdict first, then ≤5 tight lines."],[5,7,"MUST: full explanation, still scannable."],[8,10,"MUST: exhaustive — tradeoffs, alternatives, caveats."]]},
- {name:"autonomy",label:"Autonomy",low:"ask first",high:"just do it",def:6,bands:[[0,2,"MUST: propose and wait; no edit/run until confirmed."],[3,5,"MUST: confirm irreversible/outward; proceed on local work."],[6,8,"MUST: just do it; confirm only money/publish/delete/secrets."],[9,10,"MUST: full autonomy; stop only for money or public launch."]]},
- {name:"novelty",label:"Novelty",low:"proven",high:"bleeding-edge",def:5,bands:[[0,3,"MUST: proven stacks only; reject experimental deps."],[4,6,"MUST: mostly proven; at most one calculated new tool."],[7,8,"MUST: prefer modern approaches when they clearly win."],[9,10,"MUST: experimental by default; note risks."]]},
- {name:"caution",label:"Caution",low:"move fast",high:"review-grade",def:5,bands:[[0,3,"MUST: minimize friction; ship fast."],[4,6,"MUST: sensible checks; avoid obvious foot-guns."],[7,8,"MUST: be explicit about risk on claims and data."],[9,10,"MUST: review-grade posture; flag residual risk."]]},
-];
-const PRESETS={
- default:{rigor:6,context_depth:6,verification:6,self_review:5,verbosity:3,autonomy:6,novelty:5,caution:5},
- fable:{rigor:9,context_depth:9,verification:9,self_review:8,verbosity:3,autonomy:7,novelty:3,caution:6},
- ship:{rigor:5,context_depth:4,verification:6,self_review:3,verbosity:2,autonomy:9,novelty:4,caution:3},
- careful:{rigor:7,context_depth:7,verification:9,self_review:8,verbosity:4,autonomy:2,novelty:2,caution:9},
- explore:{rigor:7,context_depth:8,verification:6,self_review:5,verbosity:5,autonomy:6,novelty:9,caution:4},
-};
-const bandFor=(d,v)=>{for(const[lo,hi,t]of d.bands)if(v>=lo&&v<=hi)return t;return d.bands[d.bands.length-1][2]};
-const state={...PRESETS.default};
-function renderDials(){const el=document.getElementById('dials');el.innerHTML='';for(const d of DIALS){const row=document.createElement('div');row.className='dial';row.innerHTML=`<div class="top"><span class="nm">${d.label}</span><span class="val" id="v-${d.name}">${state[d.name]}/10</span></div><input type="range" min="0" max="10" step="1" value="${state[d.name]}" data-n="${d.name}"><div class="poles"><span>${d.low}</span><span>${d.high}</span></div>`;el.appendChild(row);row.querySelector('input').addEventListener('input',e=>{state[d.name]=+e.target.value;document.getElementById('v-'+d.name).textContent=state[d.name]+'/10';markPreset();renderBehavior();});}}
-function renderBehavior(){const el=document.getElementById('behavior');el.innerHTML='';for(const d of DIALS){const r=document.createElement('div');r.className='brow';r.innerHTML=`<span class="bn">${d.label} ${state[d.name]}</span><span class="bt">${bandFor(d,state[d.name])}</span>`;el.appendChild(r);}}
-function renderPresets(){const el=document.getElementById('presets');el.innerHTML='';for(const name of Object.keys(PRESETS)){const b=document.createElement('button');b.textContent=name;b.dataset.p=name;b.onclick=()=>{Object.assign(state,PRESETS[name]);syncInputs();markPreset();renderBehavior();};el.appendChild(b);}}
-function syncInputs(){for(const d of DIALS){const inp=document.querySelector(`input[data-n="${d.name}"]`);if(inp)inp.value=state[d.name];document.getElementById('v-'+d.name).textContent=state[d.name]+'/10';}}
-function markPreset(){let m='';for(const[n,v]of Object.entries(PRESETS))if(DIALS.every(d=>state[d.name]===v[d.name])){m=n;break;}document.querySelectorAll('#presets button').forEach(b=>b.classList.toggle('on',b.dataset.p===m));}
-function tab(id,btn){document.querySelectorAll('.tabpane').forEach(p=>p.classList.remove('on'));document.getElementById(id).classList.add('on');btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
-function cp(id,btn){const t=document.getElementById(id).textContent;navigator.clipboard&&navigator.clipboard.writeText(t);const o=btn.textContent;btn.textContent='Copied';setTimeout(()=>btn.textContent=o,1200);}
-async function generate(){
-  const btn=document.getElementById('gen');btn.disabled=true;btn.textContent='Generating…';
-  try{
-    const r=await fetch('/api/provision',{method:'POST'});
-    if(!r.ok)throw new Error('HTTP '+r.status);
-    const j=await r.json();
-    document.getElementById('ep').textContent=j.endpoint;
-    document.getElementById('tok').textContent=j.token;
-    document.getElementById('genout').classList.remove('hidden');
-    document.getElementById('generr').classList.add('hidden');
-    btn.textContent='Generate another';
-  }catch(e){
-    const err=document.getElementById('generr');err.textContent='Could not reach the provisioner ('+e.message+'). Try the local install below.';err.classList.remove('hidden');
-    btn.textContent='Retry';
-  }finally{btn.disabled=false;}
-}
-renderPresets();renderDials();renderBehavior();markPreset();
-</script>
+  <main>
+    <div class="eyebrow">KE Studios</div>
+    <h1>This experiment has been retired.</h1>
+    <p>The hosted connector no longer accepts tokens or model requests. Existing integrations should be removed from their client settings.</p>
+    <p><a href="https://kestudios.dev">Return to kestudios.dev</a></p>
+  </main>
 </body>
 </html>

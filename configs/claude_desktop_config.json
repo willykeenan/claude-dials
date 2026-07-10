@@ -1,8 +1,3 @@
 {
-  "mcpServers": {
-    "dials": {
-      "command": "npx",
-      "args": ["-y", "github:willykeenan/claude-dials"]
-    }
-  }
+  "mcpServers": {}
 }

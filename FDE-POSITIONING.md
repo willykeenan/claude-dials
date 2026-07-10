@@ -1,5 +1,7 @@
 # Dials → Anthropic Forward Deployed Engineer
 
+> Historical archive: this experiment was retired on 2026-07-09 and is no longer an active portfolio claim.
+
 Strategy for using this artifact (and the KE Studios portfolio) to land an FDE role.
 
 ## Verdict
